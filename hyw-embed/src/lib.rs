@@ -2,12 +2,14 @@
 
 #![deny(missing_docs)]
 #![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
+#![allow(clippy::multiple_crate_versions, reason = "Fucking windows.")]
 
 mod json;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as DECODER};
+use cyper::Client;
 use json::{RequestBody, ResponseBody};
-use nyquest::{AsyncClient as Client, Body, ClientBuilder, Request};
+use std::collections::HashMap;
 
 // const API_ENDPOINT: &str = "https://api.siliconflow.com/v1/embeddings";
 const API_ENDPOINT: &str = "https://api.siliconflow.cn/v1/embeddings";
@@ -26,12 +28,13 @@ impl ApiClient {
     ///
     /// Panics if the HTTP client fails to build.
     // TODO: Handle errors gracefully.
-    pub async fn new(api_key: &str) -> Self {
-        let client = ClientBuilder::default()
-            .with_header("Authorization", format!("Bearer {api_key}"))
-            .build_async()
-            .await
-            .expect("Failed to build HTTP client");
+    #[must_use]
+    pub fn new(api_key: &str) -> Self {
+        let mut headers = HashMap::new();
+        headers.insert("Authorization".to_string(), format!("Bearer {api_key}"));
+        let client = Client::builder()
+            .default_headers((&headers).try_into().expect("Failed to convert headers"))
+            .build();
         Self { client }
     }
 
@@ -47,9 +50,15 @@ impl ApiClient {
             input,
             encoding_format: "base64",
         };
-        let request = Request::post(API_ENDPOINT)
-            .with_body(Body::json(&body).expect("Failed to serialize request body"));
-        let response = self.client.request(request).await.expect("Request failed");
+        let response = self
+            .client
+            .post(API_ENDPOINT)
+            .expect("Failed to prepare post request")
+            .json(&body)
+            .expect("Failed to serialize request body")
+            .send()
+            .await
+            .expect("Request failed");
         let response_body: ResponseBody = response
             .json()
             .await

@@ -12,7 +12,7 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
-nyquest.workspace = true
+cyper.workspace = true
 base64 = "0.22.1"
 compio.workspace = true
 serde.workspace = true
