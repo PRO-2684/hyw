@@ -12,7 +12,7 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
-hyw-data = { path = "../hyw-data", version = "0.1.0" }
+hyw-base = { path = "../hyw-base", version = "0.1.0" }
 
 [[bin]]
 name = "hyw"

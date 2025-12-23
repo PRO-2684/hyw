@@ -1,8 +1,8 @@
 [package]
-name = "hyw-data"
+name = "hyw-base"
 version = "0.1.0"
 readme = "README.md"
-description = "Data for hyw"
+description = "Data and basic structures for hyw"
 keywords = []
 categories = []
 edition.workspace = true

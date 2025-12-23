@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [ "hyw", "hyw-data", "hyw-embed" ]
+members = [ "hyw", "hyw-base", "hyw-embed" ]
 
 [workspace.package]
 edition = "2024"

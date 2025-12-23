@@ -13,7 +13,7 @@ authors.workspace = true
 
 [dependencies]
 hyw = { path = "../hyw", version = "0.1.0" }
-hyw-data = { path = "../hyw-data", version = "0.1.0" }
+hyw-base = { path = "../hyw-base", version = "0.1.0" }
 
 [[bin]]
 name = "hyw-embed"

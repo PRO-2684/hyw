@@ -6,11 +6,11 @@ version = 4
 name = "hyw"
 version = "0.1.0"
 dependencies = [
- "hyw-data",
+ "hyw-base",
 ]
 
 [[package]]
-name = "hyw-data"
+name = "hyw-base"
 version = "0.1.0"
 
 [[package]]
@@ -18,5 +18,5 @@ name = "hyw-embed"
 version = "0.1.0"
 dependencies = [
  "hyw",
- "hyw-data",
+ "hyw-base",
 ]
