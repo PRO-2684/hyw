@@ -12,15 +12,13 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
-hyw = { path = "../hyw", version = "0.1.0" }
-hyw-base = { path = "../hyw-base", version = "0.1.0" }
+nyquest.workspace = true
+base64 = "0.22.1"
+compio.workspace = true
+serde.workspace = true
 
 [[bin]]
 name = "hyw-embed"
-required-features = ["cli"]
-
-[features]
-cli = []
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-v{ version }-{ target }{ archive-suffix }"

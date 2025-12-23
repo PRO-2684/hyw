@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = [ "hyw", "hyw-base", "hyw-embed" ]
+members = ["hyw", "hyw-base", "hyw-embed"]
 
 [workspace.package]
 edition = "2024"
@@ -8,6 +8,11 @@ include = ["/src", "README.md"]
 repository = "https://github.com/PRO-2684/hyw"
 license = "MIT"
 authors = ["PRO-2684"]
+
+[workspace.dependencies]
+compio = { version = "0.17.0", features = ["macros"] }
+nyquest = { version = "0.4.0", features = ["async", "json", "multipart"] }
+serde = { version = "1.0.228", features = ["derive"] }
 
 [profile.release]
 debug = false     # Disable debug information in release builds.

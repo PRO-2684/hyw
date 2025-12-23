@@ -146,6 +146,12 @@ impl fmt::Display for Hyw {
     }
 }
 
+impl Default for Hyw {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Iterator over all possible [`Hyw`] combinations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HywIterator {
