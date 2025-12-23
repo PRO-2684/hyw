@@ -8,7 +8,7 @@
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/hyw?logo=rust)](https://crates.io/crates/hyw)
 [![docs.rs](https://img.shields.io/docsrs/hyw?logo=rust)](https://docs.rs/hyw)
 
-hyw
+hyw?
 
 - https://docs.rs/lancedb/latest/lancedb/index.html
 - https://docs.rs/fastembed/5.5.0/fastembed/

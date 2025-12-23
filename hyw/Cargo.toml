@@ -2,7 +2,7 @@
 name = "hyw"
 version = "0.1.0"
 readme = "README.md"
-description = "hyw"
+description = "Querying embeddings for hyw"
 keywords = []
 categories = []
 edition.workspace = true
@@ -12,6 +12,7 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
+hyw-data = { path = "../hyw-data", version = "0.1.0" }
 
 [[bin]]
 name = "hyw"

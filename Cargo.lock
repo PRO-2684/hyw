@@ -5,7 +5,18 @@ version = 4
 [[package]]
 name = "hyw"
 version = "0.1.0"
+dependencies = [
+ "hyw-data",
+]
+
+[[package]]
+name = "hyw-data"
+version = "0.1.0"
 
 [[package]]
 name = "hyw-embed"
 version = "0.1.0"
+dependencies = [
+ "hyw",
+ "hyw-data",
+]
