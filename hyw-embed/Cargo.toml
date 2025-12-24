@@ -12,10 +12,12 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
-cyper.workspace = true
 base64 = "0.22.1"
+cyper.workspace = true
 compio.workspace = true
 serde.workspace = true
+thiserror.workspace = true
+http = "1.4.0"
 
 [[bin]]
 name = "hyw-embed"
