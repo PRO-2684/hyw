@@ -2,34 +2,63 @@
 #![allow(clippy::multiple_crate_versions, reason = "Fucking windows.")]
 
 use hyw_base::Hyw;
-use hyw_embed::ApiClient;
+use hyw_embed::{ApiClient, EmbedError};
+use instant_distance::{Builder, Search};
+use itermore::IterArrayChunks;
 use std::io::Write;
 
 // const BATCH_SIZE: usize = 128;
 const BATCH_SIZE: usize = 16; // DEBUG
 
 #[compio::main]
-async fn main() -> Result<(), hyw_embed::EmbedError> {
+async fn main() -> Result<(), EmbedError> {
+    // Initialize API client & lock stdout
     let api_key = std::env::var("SILICON_FLOW_API_KEY").expect("SILICON_FLOW_API_KEY not set");
     let client = ApiClient::new(&api_key).expect("Failed to create API client");
+    let mut lock = std::io::stdout().lock();
+
+    // Prepare Hyw iterator and batches
     let hyw_iter = Hyw::all();
     let size = hyw_iter.size_hint().0;
+    let hyw_batches = hyw_iter.arrays::<BATCH_SIZE>();
 
-    // Lock stdout for better performance
-    let mut lock = std::io::stdout().lock();
-    writeln!(lock, "Total hyw count: {size}").unwrap();
+    // Data to construct instant_distance::HnswMap
+    let mut points = Vec::with_capacity(size); // Embeddings
+    let mut values = Vec::with_capacity(size); // Indices
 
-    // DEBUG: Process only first 2 batches
-    for batch in itermore::IterArrayChunks::array_chunks(hyw_iter).take(2) {
+    // Process batches
+    for batch in hyw_batches.take(2) { // DEBUG: Process only first 2 batches
         let texts: [String; BATCH_SIZE] = batch.map(|hyw| hyw.to_string());
         let text_refs: [&str; BATCH_SIZE] = std::array::from_fn(|i| texts[i].as_str());
         let embeddings = client.embed_text(&text_refs).await?;
 
         for (hyw, embedding) in batch.iter().zip(embeddings.iter()) {
-            writeln!(lock, "[{:>6}/{size}] {hyw} ({}, {}, {}...)", hyw.to_index(), embedding[0], embedding[1], embedding[2]).unwrap();
-            // lock.flush().unwrap();
+            writeln!(lock, "[{:>7}/{size}] {hyw} ({}, {}, {}...)", hyw.to_index(), embedding[0], embedding[1], embedding[2]).unwrap();
         }
+
+        points.extend(embeddings);
+        values.extend(batch.map(|hyw| hyw.to_index()));
     }
+
+    // TODO: Process remainders
+
+    // DEBUG: Test query
+    let test_query = points[0].clone();
+    let test_hyw = Hyw::from_index(values[0]).expect("Cannot reconstruct Hyw from index");
+    writeln!(lock, "Test query Hyw: {test_hyw}").unwrap();
+
+    // Construct HnswMap
+    let map = Builder::default().build(points, values);
+
+    // DEBUG: Test search
+    let mut search = Search::default();
+    let results = map.search(&test_query, &mut search);
+    for (i, result) in results.take(5).enumerate() {
+        let hyw = Hyw::from_index(*result.value).expect("Cannot reconstruct Hyw from index");
+        writeln!(lock, "Result #{i}: {hyw} (Distance: {})", result.distance).unwrap();
+    }
+
+    // TODO: Serialize HnswMap
 
     Ok(())
 }
