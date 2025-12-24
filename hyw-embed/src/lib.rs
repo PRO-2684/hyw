@@ -7,17 +7,17 @@
 mod error;
 mod json;
 
+use std::ops::Deref;
 use base64::{Engine as _, engine::general_purpose::STANDARD as DECODER};
 use cyper::{Client, Error as CyperError};
 pub use error::EmbedError;
 use http::{HeaderMap, StatusCode, header::InvalidHeaderValue};
+use instant_distance::Point;
+// use serde::{Deserialize, Serialize};
 use json::{RequestBody, ResponseBody};
 
 // const API_ENDPOINT: &str = "https://api.siliconflow.com/v1/embeddings";
 const API_ENDPOINT: &str = "https://api.siliconflow.cn/v1/embeddings";
-
-/// The embedding type.
-pub type Embedding = [f32; 1024];
 
 /// A client for the Silicon Flow API.
 #[derive(Debug, Clone)]
@@ -25,6 +25,10 @@ pub struct ApiClient {
     /// HTTP client.
     client: Client,
 }
+
+/// The embedding type. Just a wrapper around a fixed-size array of 1024 f32 values.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Embedding([f32; 1024]);
 
 impl ApiClient {
     /// Create a new API client.
@@ -98,10 +102,35 @@ impl ApiClient {
                         chunk.try_into().expect("The chunk length should be 4 bytes"),
                     );
                 });
-                Ok(embedding)
+                Ok(embedding.into())
             })
             .collect::<Result<_, _>>()?;
 
         Ok(result)
+    }
+}
+
+impl From<[f32; 1024]> for Embedding {
+    fn from(value: [f32; 1024]) -> Self {
+        Embedding(value)
+    }
+}
+
+impl Deref for Embedding {
+    type Target = [f32; 1024];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Point for Embedding {
+    fn distance(&self, other: &Self) -> f32 {
+        self.0
+            .iter()
+            .zip(other.0.iter())
+            .map(|(a, b)| (a - b).powi(2))
+            .sum::<f32>()
+            .sqrt()
     }
 }

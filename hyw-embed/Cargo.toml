@@ -15,6 +15,9 @@ authors.workspace = true
 base64 = "0.22.1"
 cyper.workspace = true
 compio.workspace = true
+hyw-base = { path = "../hyw-base", version = "0.1.0" }
+instant-distance.workspace = true
+itermore = { version = "0.8.0", features = ["array_chunks"] }
 serde.workspace = true
 thiserror.workspace = true
 http = "1.4.0"
