@@ -48,6 +48,7 @@ async fn main() -> Result<(), EmbedError> {
     writeln!(lock, "Test query Hyw: {test_hyw}").unwrap();
 
     // Construct HnswMap
+    // PointId (result.pid) is not guaranteed to be in sync with Hyw index, so we do not use Hnsw, but store Hyw indices in HnswMap as the value.
     let map = Builder::default().build(points, values);
 
     // DEBUG: Test search
@@ -55,7 +56,7 @@ async fn main() -> Result<(), EmbedError> {
     let results = map.search(&test_query, &mut search);
     for (i, result) in results.take(5).enumerate() {
         let hyw = Hyw::from_index(*result.value).expect("Cannot reconstruct Hyw from index");
-        writeln!(lock, "Result #{i}: {hyw} (Distance: {})", result.distance).unwrap();
+        writeln!(lock, "Result #{i}: {hyw} (Distance: {}, id: {})", result.distance, result.pid.into_inner()).unwrap();
     }
 
     // TODO: Serialize HnswMap
