@@ -10,10 +10,6 @@
 
 hyw?
 
-- https://docs.rs/lancedb/latest/lancedb/index.html
-- https://docs.rs/fastembed/5.5.0/fastembed/
-- https://docs.rs/nyquest/0.4.0/nyquest/struct.Body.html#method.multipart
-
 ## ⚙️ Automatic Releases Setup
 
 1. [Create a new GitHub repository](https://github.com/new) with the name `hyw` and push this generated project to it.
