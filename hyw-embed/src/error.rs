@@ -1,11 +1,24 @@
 //! Error types for the hyw-embed crate.
 
 use super::CyperError;
+use postcard::Error as PostcardError;
+use std::io::Error as IoError;
 use thiserror::Error;
 
 /// Possible errors when embedding text.
 #[derive(Debug, Error)]
 pub enum EmbedError {
+    // File errors.
+    /// IO Error, when accessing (open / create / write) a file.
+    #[error("IO error: {0}")]
+    IoError(#[from] IoError),
+    /// Error when serializing data.
+    #[error("Failed to serialize data: {0}")]
+    DataSerialization(PostcardError),
+    /// Error when deserializing data.
+    #[error("Failed to deserialize data: {0}")]
+    DataDeserialization(PostcardError),
+
     // HTTP client errors.
     /// Error when preparing the request.
     #[error("Failed to prepare request: {0}")]

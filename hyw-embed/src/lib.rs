@@ -7,15 +7,15 @@
 mod error;
 mod json;
 
-use std::ops::Deref;
 use base64::{Engine as _, engine::general_purpose::STANDARD as DECODER};
 use cyper::{Client, Error as CyperError};
 pub use error::EmbedError;
 use http::{HeaderMap, StatusCode, header::InvalidHeaderValue};
 use instant_distance::Point;
+use json::{RequestBody, ResponseBody};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
-use json::{RequestBody, ResponseBody};
+use std::ops::Deref;
 
 // const API_ENDPOINT: &str = "https://api.siliconflow.com/v1/embeddings";
 const API_ENDPOINT: &str = "https://api.siliconflow.cn/v1/embeddings";
@@ -30,10 +30,7 @@ pub struct ApiClient {
 /// The embedding type. Just a wrapper around a fixed-size array of 1024 f32 values.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct Embedding(
-    #[serde(with = "BigArray")]
-    [f32; 1024]
-);
+pub struct Embedding(#[serde(with = "BigArray")] [f32; 1024]);
 
 impl ApiClient {
     /// Create a new API client.
@@ -90,21 +87,20 @@ impl ApiClient {
             }
         }
 
-        let response_body: ResponseBody = response
-            .json()
-            .await
-            .map_err(EmbedError::ResponseParse)?;
+        let response_body: ResponseBody =
+            response.json().await.map_err(EmbedError::ResponseParse)?;
 
         let result = response_body
             .data
             .into_iter()
             .map(|data| -> Result<Embedding, EmbedError> {
-                let bytes = DECODER
-                    .decode(data.embedding.as_bytes())?;
+                let bytes = DECODER.decode(data.embedding.as_bytes())?;
                 let mut embedding = [0.0; 1024];
                 bytes.chunks_exact(4).enumerate().for_each(|(i, chunk)| {
                     embedding[i] = f32::from_le_bytes(
-                        chunk.try_into().expect("The chunk length should be 4 bytes"),
+                        chunk
+                            .try_into()
+                            .expect("The chunk length should be 4 bytes"),
                     );
                 });
                 Ok(embedding.into())
