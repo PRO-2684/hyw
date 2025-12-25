@@ -75,6 +75,8 @@ async fn main() -> Result<(), EmbedError> {
         // Save after each batch
         file.rewind()?;
         to_io(&data, &mut file).map_err(|e| EmbedError::DataSerialization(e))?;
+        let pos = file.stream_position()?;
+        file.set_len(pos)?;
         file.flush()?;
 
         write!(stderr, "\r[{batch_num:>batch_width$}/{total_batches}] Processed batch, saved {}/{size} embeddings", data.len()).unwrap();
@@ -99,6 +101,8 @@ async fn main() -> Result<(), EmbedError> {
         // Save final data
         file.rewind()?;
         to_io(&data, &mut file).map_err(|e| EmbedError::DataSerialization(e))?;
+        let pos = file.stream_position()?;
+        file.set_len(pos)?;
         file.flush()?;
 
         write!(stderr, "\r[{batch_num:>batch_width$}/{total_batches}] Processed remainder, saved {}/{size} embeddings", data.len()).unwrap();
