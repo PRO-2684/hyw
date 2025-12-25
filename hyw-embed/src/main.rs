@@ -5,48 +5,101 @@ use compio::{runtime::time::interval, signal::ctrl_c};
 use futures_util::{FutureExt, select};
 use hyw_base::Hyw;
 use hyw_embed::{ApiClient, EmbedError, Embedding};
+use instant_distance::{Builder, Search};
 use itermore::IterArrayChunks;
-use postcard::{from_io, to_io};
-use std::{fs::File, io::{Error as IoError, ErrorKind, Write}, path::Path, pin::pin, time::Duration};
+use postcard::{from_io, to_io, Error as PostcardError};
+use std::{fs::File, io::{Error as IoError, Write}, path::Path, pin::pin, time::Duration};
+use thiserror::Error;
 
 const BATCH_SIZE: usize = 32;
 const RPM: u64 = 2000; // Rate limit: 2k requests per minute
 const DELAY: Duration = Duration::from_millis(60_000 / RPM);
 
+#[derive(Error, Debug)]
+enum MainError {
+    #[error("IO error: {0}")]
+    Io(#[from] IoError),
+    #[error("Postcard serialization/deserialization error: {0}")]
+    Postcard(#[from] PostcardError),
+    #[error("Embedding error: {0}")]
+    Embed(#[from] EmbedError),
+}
+
 #[compio::main]
-async fn main() -> Result<(), IoError> {
+async fn main() -> Result<(), MainError> {
     // Parse arguments (TODO: Use proper argument parser)
     let mut args = std::env::args().skip(1);
     let api_key = args
         .next()
         .expect("Please provide SILICON_FLOW_API_KEY as the first argument");
-    let data_path = args
+    let map_path = args
         .next()
-        .unwrap_or_else(|| "./hyw_embeddings.postcard".to_string());
-    let data_path = Path::new(&data_path);
+        .unwrap_or_else(|| "./hyw.postcard".to_string());
+    // Serialized mapping
+    let map_path = Path::new(&map_path);
+    // Temporary store of embeddings during processing
+    let tmp_path = map_path.with_extension("postcard.tmp");
 
     // Initialize API client
     let client = ApiClient::new(&api_key).expect("Failed to create API client");
 
-    // Load existing data or start fresh
-    let mut data: Vec<Embedding> = if data_path.exists() {
-        let file = File::open(&data_path)?;
+    let map = if map_path.exists() {
+        // Deserialize existing map
+        eprintln!("Loading existing embedding map from {}", map_path.display());
+        let file = File::open(&map_path)?;
         let mut buffer = vec![0u8; 8192]; // Buffer for deserialization
-        let (data, _) =
-            from_io((file, &mut buffer)).map_err(|e| IoError::new(ErrorKind::Other, e))?;
-        data
+        from_io((file, &mut buffer))?.0
     } else {
-        Vec::new()
+        // Create new map
+        eprintln!("Creating new embedding map at {}", map_path.display());
+        // Load existing data or start fresh
+        let mut data: Vec<Embedding> = if tmp_path.exists() {
+            eprintln!("Resuming from temporary file {}", tmp_path.display());
+            let file = File::open(&tmp_path)?;
+            let mut buffer = vec![0u8; 8192]; // Buffer for deserialization
+            from_io((file, &mut buffer))?.0
+        } else {
+            eprintln!("No temporary file found, starting fresh.");
+            Vec::new()
+        };
+
+        let embed_result = embed_all(&client, &mut data).await;
+        match &embed_result {
+            Ok(()) => eprintln!("Embedding process completed successfully. Saving temp data..."),
+            Err(e) => eprintln!("Embedding process failed: {e}. Saving progress for later resumption..."),
+        };
+
+        // Save tmp data
+        let file = File::create(&tmp_path)?;
+        to_io(&data, file)?;
+
+        // Create map
+        eprintln!("Building HNSW map...");
+        let indices: Vec<_> = (0..data.len()).collect();
+        let map = Builder::default().build(data, indices);
+
+        // Save final map
+        eprintln!("Saving final embedding map to {}...", map_path.display());
+        let file = File::create(&map_path)?;
+        to_io(&map, file)?;
+
+        map
     };
 
-    match run(client, &mut data).await {
-        Ok(()) => eprintln!("Embedding process completed successfully."),
-        Err(e) => eprintln!("Embedding process failed: {e}"),
-    };
+    eprintln!("Embedding map is ready! Starting search...");
 
-    // Save data
-    let file = File::create(&data_path)?;
-    to_io(&data, file).map_err(|e| IoError::new(ErrorKind::Other, e))?;
+    let query = "示例查询文本";
+    let query_embedding = &client.embed_text(&[query]).await?[0];
+    let mut search_state = Search::default(); // only used by the library internally
+    let results = map.search(&query_embedding, &mut search_state);
+
+    eprintln!("Top 5 results for query: \"{query}\"");
+    for (rank, result) in results.take(5).enumerate() {
+        let id = result.value;
+        let distance = result.distance;
+        let hyw = Hyw::from_index(*id).unwrap();
+        println!("#{}: {hyw} (Distance: {distance:.4})", rank + 1);
+    }
 
     Ok(())
 }
@@ -73,8 +126,8 @@ async fn embed_with_interrupt(client: &ApiClient, text_refs: &[&str]) -> Result<
     }
 }
 
-/// Run the embedding process.
-async fn run(client: ApiClient, data: &mut Vec<Embedding>) -> Result<(), EmbedError> {
+/// Embeds all Hyw items in batches, updating the provided data vector.
+async fn embed_all(client: &ApiClient, data: &mut Vec<Embedding>) -> Result<(), EmbedError> {
     let mut stderr = std::io::stderr().lock();
     // Prepare Hyw iterator
     let size = Hyw::all().size_hint().0;
@@ -86,13 +139,13 @@ async fn run(client: ApiClient, data: &mut Vec<Embedding>) -> Result<(), EmbedEr
     if current_count >= size {
         writeln!(
             stderr,
-            "All embeddings already generated ({current_count}/{size}). Exiting."
+            "All embeddings already generated ({current_count}/{size}). Skipping embedding process."
         )
         .unwrap();
         return Ok(());
     }
 
-    writeln!(stderr, "Resuming from {current_count}/{size} embeddings...").unwrap();
+    writeln!(stderr, "Starting from {current_count}/{size} embeddings...").unwrap();
 
     // Skip already processed items
     let hyw_iter = Hyw::all().skip(current_count);
