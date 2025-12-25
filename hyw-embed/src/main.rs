@@ -6,11 +6,11 @@ use hyw_base::Hyw;
 use hyw_embed::{ApiClient, EmbedError, Embedding};
 use itermore::IterArrayChunks;
 use postcard::{from_io, to_io};
-use std::{fs::File, io::{Write, Seek}, path::Path, time::Duration};
+use std::{fs::File, io::Write, path::Path, time::Duration};
 
 const BATCH_SIZE: usize = 32;
-const RPM: u32 = 2000; // Rate limit: 2k requests per minute
-const DELAY: Duration = Duration::from_millis(60_000 / RPM as u64);
+const RPM: u64 = 2000; // Rate limit: 2k requests per minute
+const DELAY: Duration = Duration::from_millis(60_000 / RPM);
 
 #[compio::main]
 async fn main() -> Result<(), EmbedError> {
@@ -26,12 +26,6 @@ async fn main() -> Result<(), EmbedError> {
 
     // Initialize API client
     let client = ApiClient::new(&api_key).expect("Failed to create API client");
-    let mut stderr = std::io::stderr().lock();
-
-    // Prepare Hyw iterator
-    let size = Hyw::all().size_hint().0;
-    let total_batches = (size + BATCH_SIZE - 1) / BATCH_SIZE;
-    let batch_width = total_batches.to_string().len();
 
     // Load existing data or start fresh
     let mut data: Vec<Embedding> = if data_path.exists() {
@@ -41,8 +35,29 @@ async fn main() -> Result<(), EmbedError> {
             from_io((file, &mut buffer)).map_err(|e| EmbedError::DataDeserialization(e))?;
         data
     } else {
-        Vec::with_capacity(size)
+        Vec::new()
     };
+
+    match run(client, &mut data).await {
+        Ok(()) => eprintln!("Embedding process completed successfully."),
+        Err(e) => eprintln!("Embedding process failed: {e}"),
+    };
+
+    // Save data
+    let file = File::create(&data_path)?;
+    to_io(&data, file).map_err(|e| EmbedError::DataSerialization(e))?;
+
+    Ok(())
+}
+
+/// Run the embedding process.
+async fn run(client: ApiClient, data: &mut Vec<Embedding>) -> Result<(), EmbedError> {
+    let mut stderr = std::io::stderr().lock();
+    // Prepare Hyw iterator
+    let size = Hyw::all().size_hint().0;
+    let total_batches = (size + BATCH_SIZE - 1) / BATCH_SIZE;
+    let batch_width = total_batches.to_string().len();
+    data.reserve(size - data.len());
 
     let current_count = data.len();
     if current_count >= size {
@@ -61,7 +76,6 @@ async fn main() -> Result<(), EmbedError> {
     let mut hyw_batches = hyw_iter.arrays::<BATCH_SIZE>();
 
     // Process full batches
-    let mut file = File::create(&data_path)?;
     let mut interval = interval(DELAY);
     let mut batch_num = (current_count / BATCH_SIZE) + 1;
     while let Some(batch) = hyw_batches.next() {
@@ -70,14 +84,7 @@ async fn main() -> Result<(), EmbedError> {
         let embeddings = client.embed_text(&text_refs).await?;
         data.extend(embeddings);
 
-        // Save after each batch
-        file.rewind()?;
-        to_io(&data, &mut file).map_err(|e| EmbedError::DataSerialization(e))?;
-        let pos = file.stream_position()?;
-        file.set_len(pos)?;
-        file.flush()?;
-
-        write!(stderr, "\r[{batch_num:>batch_width$}/{total_batches}] Processed batch, saved {}/{size} embeddings", data.len()).unwrap();
+        write!(stderr, "\r[{batch_num:>batch_width$}/{total_batches}] Processed batch, {}/{size} embeddings", data.len()).unwrap();
         stderr.flush().unwrap();
         batch_num += 1;
 
@@ -93,14 +100,7 @@ async fn main() -> Result<(), EmbedError> {
         let embeddings = client.embed_text(&text_refs).await?;
         data.extend(embeddings);
 
-        // Save final data
-        file.rewind()?;
-        to_io(&data, &mut file).map_err(|e| EmbedError::DataSerialization(e))?;
-        let pos = file.stream_position()?;
-        file.set_len(pos)?;
-        file.flush()?;
-
-        write!(stderr, "\r[{batch_num:>batch_width$}/{total_batches}] Processed remainder, saved {}/{size} embeddings", data.len()).unwrap();
+        write!(stderr, "\r[{batch_num:>batch_width$}/{total_batches}] Processed remainder, {}/{size} embeddings", data.len()).unwrap();
     }
 
     writeln!(
