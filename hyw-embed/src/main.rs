@@ -1,13 +1,16 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
 #![allow(clippy::multiple_crate_versions, reason = "Fucking windows.")]
 
+use compio::runtime::time::sleep;
 use hyw_base::Hyw;
 use hyw_embed::{ApiClient, EmbedError, Embedding};
 use itermore::IterArrayChunks;
 use postcard::{from_io, to_io};
-use std::{fs::File, io::Write, path::Path};
+use std::{fs::File, io::Write, path::Path, time::Duration};
 
-const BATCH_SIZE: usize = 128;
+const BATCH_SIZE: usize = 32;
+const RPM: u32 = 2000; // Rate limit: 2k requests per minute
+const DELAY: Duration = Duration::from_millis(60_000 / RPM as u64);
 
 #[compio::main]
 async fn main() -> Result<(), EmbedError> {
@@ -18,7 +21,7 @@ async fn main() -> Result<(), EmbedError> {
         .expect("Please provide SILICON_FLOW_API_KEY as the first argument");
     let data_path = args
         .next()
-        .unwrap_or_else(|| "./data/hyw_embeddings.postcard".to_string());
+        .unwrap_or_else(|| "./hyw_embeddings.postcard".to_string());
     let data_path = Path::new(&data_path);
 
     // Initialize API client
@@ -75,6 +78,9 @@ async fn main() -> Result<(), EmbedError> {
         write!(stderr, "\r[{batch_num:>batch_width$}/{total_batches}] Processed batch, saved {}/{size} embeddings", data.len()).unwrap();
         stderr.flush().unwrap();
         batch_num += 1;
+
+        // Respect rate limit
+        sleep(DELAY).await;
     }
 
     // Process remainders
