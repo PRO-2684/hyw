@@ -86,9 +86,9 @@ async fn main() -> Result<(), EmbedError> {
     }
 
     // Process remainders
-    let remainder: Vec<Hyw> = hyw_batches.into_remainder().collect();
-    if !remainder.is_empty() {
-        let texts: Vec<String> = remainder.iter().map(|hyw| hyw.to_string()).collect();
+    let remainder = hyw_batches.into_remainder();
+    let texts: Vec<String> = remainder.map(|hyw| hyw.to_string()).collect();
+    if !texts.is_empty() {
         let text_refs: Vec<&str> = texts.iter().map(String::as_str).collect();
         let embeddings = client.embed_text(&text_refs).await?;
         data.extend(embeddings);
