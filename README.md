@@ -59,7 +59,8 @@ TODO
 
 ## ✅ TODO
 
-TODO
+- [ ] Saving on ctrl-c
+- [x] Saving on error
 
 ## 🎉 Credits
 
