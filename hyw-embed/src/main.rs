@@ -6,14 +6,14 @@ use hyw_base::Hyw;
 use hyw_embed::{ApiClient, EmbedError, Embedding};
 use itermore::IterArrayChunks;
 use postcard::{from_io, to_io};
-use std::{fs::File, io::Write, path::Path, time::Duration};
+use std::{fs::File, io::{Error as IoError, ErrorKind, Write}, path::Path, time::Duration};
 
 const BATCH_SIZE: usize = 32;
 const RPM: u64 = 2000; // Rate limit: 2k requests per minute
 const DELAY: Duration = Duration::from_millis(60_000 / RPM);
 
 #[compio::main]
-async fn main() -> Result<(), EmbedError> {
+async fn main() -> Result<(), IoError> {
     // Parse arguments (TODO: Use proper argument parser)
     let mut args = std::env::args().skip(1);
     let api_key = args
@@ -32,7 +32,7 @@ async fn main() -> Result<(), EmbedError> {
         let file = File::open(&data_path)?;
         let mut buffer = vec![0u8; 8192]; // Buffer for deserialization
         let (data, _) =
-            from_io((file, &mut buffer)).map_err(|e| EmbedError::DataDeserialization(e))?;
+            from_io((file, &mut buffer)).map_err(|e| IoError::new(ErrorKind::Other, e))?;
         data
     } else {
         Vec::new()
@@ -45,7 +45,7 @@ async fn main() -> Result<(), EmbedError> {
 
     // Save data
     let file = File::create(&data_path)?;
-    to_io(&data, file).map_err(|e| EmbedError::DataSerialization(e))?;
+    to_io(&data, file).map_err(|e| IoError::new(ErrorKind::Other, e))?;
 
     Ok(())
 }

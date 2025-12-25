@@ -73,17 +73,24 @@ impl ApiClient {
 
         match response.status() {
             StatusCode::UNAUTHORIZED => {
-                let error_text = response.text().await.unwrap_or_default();
-                return Err(EmbedError::InvalidApiKey(error_text));
+                let message = response.text().await.unwrap_or_default();
+                return Err(EmbedError::InvalidApiKey(message));
             }
             StatusCode::TOO_MANY_REQUESTS => {
-                let error_text = response.text().await.unwrap_or_default();
-                return Err(EmbedError::RateLimitExceeded(error_text));
+                let message = response.text().await.unwrap_or_default();
+                return Err(EmbedError::RateLimitExceeded(message));
             }
             StatusCode::OK => {}
-            _ => {
-                let error_text = response.text().await.unwrap_or_default();
-                return Err(EmbedError::UnknownApiError(error_text));
+            code => {
+                let message = response.text().await.unwrap_or_default();
+                if code == StatusCode::FORBIDDEN && message.starts_with("\"RPM limit exceeded.") {
+                    // They actually return 403 Forbidden for rate limit exceeded, instead of documented 429 Too Many Requests.
+                    return Err(EmbedError::RateLimitExceeded(message));
+                }
+                return Err(EmbedError::UnknownApiError {
+                    code,
+                    message,
+                });
             }
         }
 
