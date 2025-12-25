@@ -19,6 +19,10 @@ use std::ops::Deref;
 
 // const API_ENDPOINT: &str = "https://api.siliconflow.com/v1/embeddings";
 const API_ENDPOINT: &str = "https://api.siliconflow.cn/v1/embeddings";
+// Useful documentations:
+// - API for embedding: https://docs.siliconflow.cn/cn/api-reference/embeddings/create-embeddings
+// - Model description & rate limits: https://cloud.siliconflow.cn/open/models?target=BAAI%2Fbge-large-zh-v1.5&types=embedding
+// - Rate limit metrics: https://docs.siliconflow.cn/cn/userguide/rate-limits/rate-limit-and-upgradation#1-3-rate-limits-%E6%8C%87%E6%A0%87
 
 /// A client for the Silicon Flow API.
 #[derive(Debug, Clone)]
@@ -84,7 +88,7 @@ impl ApiClient {
             code => {
                 let message = response.text().await.unwrap_or_default();
                 if code == StatusCode::FORBIDDEN && message.starts_with("\"RPM limit exceeded.") {
-                    // They actually return 403 Forbidden for rate limit exceeded, instead of documented 429 Too Many Requests.
+                    // They actually return 403 Forbidden for rate limit exceeded if you've not completed identity verification, instead of 429 Too Many Requests.
                     return Err(EmbedError::RateLimitExceeded(message));
                 }
                 return Err(EmbedError::UnknownApiError {
