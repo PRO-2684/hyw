@@ -6,7 +6,7 @@ use hyw_base::Hyw;
 use hyw_embed::{ApiClient, EmbedError, Embedding};
 use itermore::IterArrayChunks;
 use postcard::{from_io, to_io};
-use std::{fs::File, io::Write, path::Path, time::Duration};
+use std::{fs::File, io::{Write, Seek}, path::Path, time::Duration};
 
 const BATCH_SIZE: usize = 32;
 const RPM: u32 = 2000; // Rate limit: 2k requests per minute
@@ -34,7 +34,7 @@ async fn main() -> Result<(), EmbedError> {
     let batch_width = total_batches.to_string().len();
 
     // Load existing data or start fresh
-    let mut data: Vec<(usize, Embedding)> = if data_path.exists() {
+    let mut data: Vec<Embedding> = if data_path.exists() {
         let file = File::open(&data_path)?;
         let mut buffer = vec![0u8; 8192]; // Buffer for deserialization
         let (data, _) =
@@ -61,19 +61,21 @@ async fn main() -> Result<(), EmbedError> {
     let mut hyw_batches = hyw_iter.arrays::<BATCH_SIZE>();
 
     // Process full batches
+    let mut file = File::create(&data_path)?;
     let mut batch_num = (current_count / BATCH_SIZE) + 1;
     while let Some(batch) = hyw_batches.next() {
         let texts: [String; BATCH_SIZE] = batch.map(|hyw| hyw.to_string());
         let text_refs: [&str; BATCH_SIZE] = std::array::from_fn(|i| texts[i].as_str());
         let embeddings = client.embed_text(&text_refs).await?;
 
-        for (hyw, embedding) in batch.iter().zip(embeddings.iter()) {
-            data.push((hyw.to_index(), embedding.clone()));
+        for embedding in embeddings.iter() {
+            data.push(embedding.clone());
         }
 
         // Save after each batch
-        let file = File::create(&data_path)?;
-        to_io(&data, file).map_err(|e| EmbedError::DataSerialization(e))?;
+        file.rewind()?;
+        to_io(&data, &mut file).map_err(|e| EmbedError::DataSerialization(e))?;
+        file.flush()?;
 
         write!(stderr, "\r[{batch_num:>batch_width$}/{total_batches}] Processed batch, saved {}/{size} embeddings", data.len()).unwrap();
         stderr.flush().unwrap();
@@ -90,13 +92,14 @@ async fn main() -> Result<(), EmbedError> {
         let text_refs: Vec<&str> = texts.iter().map(String::as_str).collect();
         let embeddings = client.embed_text(&text_refs).await?;
 
-        for (hyw, embedding) in remainder.iter().zip(embeddings.iter()) {
-            data.push((hyw.to_index(), embedding.clone()));
+        for embedding in embeddings.iter() {
+            data.push(embedding.clone());
         }
 
         // Save final data
-        let file = File::create(&data_path)?;
-        to_io(&data, file).map_err(|e| EmbedError::DataSerialization(e))?;
+        file.rewind()?;
+        to_io(&data, &mut file).map_err(|e| EmbedError::DataSerialization(e))?;
+        file.flush()?;
 
         write!(stderr, "\r[{batch_num:>batch_width$}/{total_batches}] Processed remainder, saved {}/{size} embeddings", data.len()).unwrap();
     }
