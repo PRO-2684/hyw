@@ -5,6 +5,7 @@ use hyw_base::Hyw;
 use hyw_embed::{ApiClient, EmbedError};
 use instant_distance::{Builder, Search};
 use itermore::IterArrayChunks;
+use postcard::{from_io, to_io};
 use std::io::Write;
 
 // const BATCH_SIZE: usize = 128;
@@ -12,8 +13,12 @@ const BATCH_SIZE: usize = 16; // DEBUG
 
 #[compio::main]
 async fn main() -> Result<(), EmbedError> {
+    // Parse arguments (TODO: Use proper argument parser)
+    let mut args = std::env::args().skip(1);
+    let api_key = args.next().expect("Please provide SILICON_FLOW_API_KEY as the first argument");
+    let data_path = args.next().unwrap_or_else(|| "hyw_embeddings.hnsw".to_string());
+
     // Initialize API client & lock stdout
-    let api_key = std::env::var("SILICON_FLOW_API_KEY").expect("SILICON_FLOW_API_KEY not set");
     let client = ApiClient::new(&api_key).expect("Failed to create API client");
     let mut lock = std::io::stdout().lock();
 

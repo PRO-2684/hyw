@@ -18,12 +18,18 @@ compio.workspace = true
 hyw-base = { path = "../hyw-base", version = "0.1.0" }
 instant-distance.workspace = true
 itermore = { version = "0.8.0", features = ["array_chunks"] }
+postcard = { workspace = true, optional = true }
 serde.workspace = true
+serde-big-array = "0.5.1"
 thiserror.workspace = true
 http = "1.4.0"
 
 [[bin]]
 name = "hyw-embed"
+required-features = ["cli"]
+
+[features]
+cli = ["postcard"]
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-v{ version }-{ target }{ archive-suffix }"

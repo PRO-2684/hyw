@@ -13,7 +13,8 @@ use cyper::{Client, Error as CyperError};
 pub use error::EmbedError;
 use http::{HeaderMap, StatusCode, header::InvalidHeaderValue};
 use instant_distance::Point;
-// use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
+use serde_big_array::BigArray;
 use json::{RequestBody, ResponseBody};
 
 // const API_ENDPOINT: &str = "https://api.siliconflow.com/v1/embeddings";
@@ -27,8 +28,12 @@ pub struct ApiClient {
 }
 
 /// The embedding type. Just a wrapper around a fixed-size array of 1024 f32 values.
-#[derive(Debug, Clone, PartialEq)]
-pub struct Embedding([f32; 1024]);
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Embedding(
+    #[serde(with = "BigArray")]
+    [f32; 1024]
+);
 
 impl ApiClient {
     /// Create a new API client.

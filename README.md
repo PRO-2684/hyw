@@ -53,11 +53,11 @@ Navigate to the [Releases page](https://github.com/PRO-2684/hyw/releases) and do
 cargo install hyw
 ```
 
-## 💡 Examples
+## 📖 Usage
 
 TODO
 
-## 📖 Usage
+## ✅ TODO
 
 TODO
 
