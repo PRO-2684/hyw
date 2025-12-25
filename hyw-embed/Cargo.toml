@@ -15,6 +15,7 @@ authors.workspace = true
 base64 = "0.22.1"
 cyper.workspace = true
 compio.workspace = true
+futures-util = { workspace = true, optional = true }
 hyw-base = { path = "../hyw-base", version = "0.1.0" }
 instant-distance.workspace = true
 itermore = { version = "0.8.0", features = ["array_chunks"] }
@@ -24,12 +25,16 @@ serde-big-array = "0.5.1"
 thiserror.workspace = true
 http = "1.4.0"
 
+[dev-dependencies]
+compio = { workspace = true, features = ["signal"] }
+futures-util = { workspace = true }
+
 [[bin]]
 name = "hyw-embed"
 required-features = ["cli"]
 
 [features]
-cli = ["postcard"]
+cli = ["postcard", "compio/signal", "futures-util"]
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-v{ version }-{ target }{ archive-suffix }"

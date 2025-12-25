@@ -133,6 +133,7 @@ dependencies = [
  "compio-net",
  "compio-quic",
  "compio-runtime",
+ "compio-signal",
  "compio-tls",
  "compio-ws",
 ]
@@ -283,6 +284,22 @@ dependencies = [
  "scoped-tls",
  "slab",
  "socket2",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "compio-signal"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47c8f91935f0aa46002a1f0edc983c12529650c96998488e86fa74606a061738"
+dependencies = [
+ "compio-buf",
+ "compio-driver",
+ "compio-runtime",
+ "libc",
+ "once_cell",
+ "os_pipe",
+ "slab",
  "windows-sys 0.61.2",
 ]
 
@@ -767,6 +784,7 @@ dependencies = [
  "base64",
  "compio",
  "cyper",
+ "futures-util",
  "http",
  "hyw-base",
  "instant-distance",
