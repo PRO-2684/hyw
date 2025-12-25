@@ -1,7 +1,7 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
 #![allow(clippy::multiple_crate_versions, reason = "Fucking windows.")]
 
-use compio::runtime::time::sleep;
+use compio::runtime::time::interval;
 use hyw_base::Hyw;
 use hyw_embed::{ApiClient, EmbedError, Embedding};
 use itermore::IterArrayChunks;
@@ -62,15 +62,13 @@ async fn main() -> Result<(), EmbedError> {
 
     // Process full batches
     let mut file = File::create(&data_path)?;
+    let mut interval = interval(DELAY);
     let mut batch_num = (current_count / BATCH_SIZE) + 1;
     while let Some(batch) = hyw_batches.next() {
         let texts: [String; BATCH_SIZE] = batch.map(|hyw| hyw.to_string());
         let text_refs: [&str; BATCH_SIZE] = std::array::from_fn(|i| texts[i].as_str());
         let embeddings = client.embed_text(&text_refs).await?;
-
-        for embedding in embeddings.iter() {
-            data.push(embedding.clone());
-        }
+        data.extend(embeddings);
 
         // Save after each batch
         file.rewind()?;
@@ -84,7 +82,7 @@ async fn main() -> Result<(), EmbedError> {
         batch_num += 1;
 
         // Respect rate limit
-        sleep(DELAY).await;
+        interval.tick().await;
     }
 
     // Process remainders
@@ -93,10 +91,7 @@ async fn main() -> Result<(), EmbedError> {
         let texts: Vec<String> = remainder.iter().map(|hyw| hyw.to_string()).collect();
         let text_refs: Vec<&str> = texts.iter().map(String::as_str).collect();
         let embeddings = client.embed_text(&text_refs).await?;
-
-        for embedding in embeddings.iter() {
-            data.push(embedding.clone());
-        }
+        data.extend(embeddings);
 
         // Save final data
         file.rewind()?;
