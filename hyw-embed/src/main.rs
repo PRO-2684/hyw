@@ -5,7 +5,7 @@ use compio::{runtime::time::interval, signal::ctrl_c};
 use futures_util::{FutureExt, select};
 use hyw_base::Hyw;
 use hyw_embed::{ApiClient, EmbedError, Embedding};
-use instant_distance::{Builder, HnswMap, Search};
+use instant_distance::Builder;
 use itermore::IterArrayChunks;
 use postcard::{from_io, to_io, Error as PostcardError};
 use std::{fs::File, io::{Error as IoError, Write}, path::Path, pin::pin, time::Duration};
@@ -27,7 +27,7 @@ enum MainError {
 
 #[compio::main]
 async fn main() -> Result<(), MainError> {
-    // Parse arguments (TODO: Use proper argument parser)
+    // Parse arguments
     let mut args = std::env::args().skip(1);
     let api_key = args
         .next()
@@ -43,67 +43,46 @@ async fn main() -> Result<(), MainError> {
     // Initialize API client
     let client = ApiClient::new(&api_key).expect("Failed to create API client");
 
-    let map = if map_path.exists() {
-        // Deserialize existing map
-        eprintln!("Loading existing embedding map from {}", map_path.display());
-        let file = File::open(&map_path)?;
+    // Check if map already exists
+    if map_path.exists() {
+        eprintln!("Embedding map already exists at {}. Exiting.", map_path.display());
+        return Ok(());
+    }
+
+    // Create new map
+    eprintln!("Creating new embedding map at {}", map_path.display());
+    // Load existing data or start fresh
+    let mut data: Vec<Embedding> = if tmp_path.exists() {
+        eprintln!("Resuming from temporary file {}", tmp_path.display());
+        let file = File::open(&tmp_path)?;
         let mut buffer = vec![0u8; 8192]; // Buffer for deserialization
         from_io((file, &mut buffer))?.0
     } else {
-        // Create new map
-        eprintln!("Creating new embedding map at {}", map_path.display());
-        // Load existing data or start fresh
-        let mut data: Vec<Embedding> = if tmp_path.exists() {
-            eprintln!("Resuming from temporary file {}", tmp_path.display());
-            let file = File::open(&tmp_path)?;
-            let mut buffer = vec![0u8; 8192]; // Buffer for deserialization
-            from_io((file, &mut buffer))?.0
-        } else {
-            eprintln!("No temporary file found, starting fresh.");
-            Vec::new()
-        };
-
-        let embed_result = embed_all(&client, &mut data).await;
-        match &embed_result {
-            Ok(()) => eprintln!("Embedding process completed successfully. Saving temp data..."),
-            Err(e) => eprintln!("Embedding process failed: {e}. Saving progress for later resumption..."),
-        };
-
-        // Save tmp data
-        let file = File::create(&tmp_path)?;
-        to_io(&data, file)?;
-
-        // Create map
-        eprintln!("Building HNSW map...");
-        let indices: Vec<_> = (0..data.len()).collect();
-        let map = Builder::default().build(data, indices);
-
-        // Save final map
-        eprintln!("Saving final embedding map to {}...", map_path.display());
-        let file = File::create(&map_path)?;
-        to_io(&map, file)?;
-
-        map
+        eprintln!("No temporary file found, starting fresh.");
+        Vec::new()
     };
 
-    eprintln!("Embedding map is ready! Starting search...");
+    let embed_result = embed_all(&client, &mut data).await;
+    match &embed_result {
+        Ok(()) => eprintln!("Embedding process completed successfully. Saving temp data..."),
+        Err(e) => eprintln!("Embedding process failed: {e}. Saving progress for later resumption..."),
+    };
 
-    let mut query = "1".to_string(); // Prevent empty on first loop
-    let stdin = std::io::stdin();
-    while !query.trim().is_empty() {
-        query.clear();
-        eprint!("\nEnter search query (or press Enter to exit): ");
-        std::io::stdout().flush().unwrap();
-        stdin.read_line(&mut query).unwrap();
-        let query = query.trim();
-        if query.is_empty() {
-            break;
-        }
-        search(&map, &client, query).await?;
-    }
+    // Save tmp data
+    let file = File::create(&tmp_path)?;
+    to_io(&data, file)?;
 
-    println!("Exiting. Goodbye!");
+    // Create map
+    eprintln!("Building HNSW map...");
+    let indices: Vec<_> = (0..data.len()).collect();
+    let map = Builder::default().build(data, indices);
 
+    // Save final map
+    eprintln!("Saving final embedding map to {}...", map_path.display());
+    let file = File::create(&map_path)?;
+    to_io(&map, file)?;
+
+    eprintln!("Embedding map is ready!");
     Ok(())
 }
 
@@ -188,23 +167,6 @@ async fn embed_all(client: &ApiClient, data: &mut Vec<Embedding>) -> Result<(), 
         "\nCompleted! All {size} embeddings generated and saved."
     )
     .unwrap();
-
-    Ok(())
-}
-
-/// Searches for the given query.
-async fn search(map: &HnswMap<Embedding, usize>, client: &ApiClient, query: &str) -> Result<(), EmbedError> {
-    let query_embedding = &client.embed_text(&[query]).await?[0];
-    let mut search_state = Search::default(); // only used by the library internally
-    let results = map.search(&query_embedding, &mut search_state);
-
-    println!("Top 5 results for query: \"{query}\"");
-    for (rank, result) in results.take(5).enumerate() {
-        let id = result.value;
-        let distance = result.distance;
-        let hyw = Hyw::from_index(*id).unwrap();
-        println!("#{}: {hyw} (Distance: {distance:.4})", rank + 1);
-    }
 
     Ok(())
 }

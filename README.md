@@ -59,8 +59,9 @@ TODO
 
 ## ✅ TODO
 
-- [ ] Saving on ctrl-c
+- [x] Saving on ctrl-c
 - [x] Saving on error
+- [x] Move searching to hyw crate
 
 ## 🎉 Credits
 

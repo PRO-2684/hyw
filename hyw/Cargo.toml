@@ -12,14 +12,18 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
+compio.workspace = true
 hyw-base = { path = "../hyw-base", version = "0.1.0" }
+hyw-embed = { path = "../hyw-embed", version = "0.1.0" }
+instant-distance.workspace = true
+postcard = { workspace = true, optional = true }
 
 [[bin]]
 name = "hyw"
 required-features = ["cli"]
 
 [features]
-cli = []
+cli = ["postcard"]
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-v{ version }-{ target }{ archive-suffix }"

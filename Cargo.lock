@@ -770,7 +770,11 @@ dependencies = [
 name = "hyw"
 version = "0.1.0"
 dependencies = [
+ "compio",
  "hyw-base",
+ "hyw-embed",
+ "instant-distance",
+ "postcard",
 ]
 
 [[package]]
