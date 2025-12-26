@@ -12,6 +12,7 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
+argh = { version = "0.1.13", default-features = false, features = ["help"] }
 compio.workspace = true
 hyw-base = { path = "../hyw-base", version = "0.1.0" }
 hyw-embed = { path = "../hyw-embed", version = "0.1.0" }

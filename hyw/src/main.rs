@@ -1,18 +1,28 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
 
+use argh::FromArgs;
 use hyw::{ApiClient, Embedding, search};
 use instant_distance::HnswMap;
 use postcard::from_io;
 use std::{fs::File, io::Write, path::Path};
 
+/// Querying embeddings for hyw.
+#[derive(FromArgs)]
+#[argh(help_triggers("-h", "--help"))]
+struct Args {
+    /// key for SiliconFlow API
+    #[argh(option, short = 'k')]
+    api_key: String,
+    /// path to the embedding map file
+    #[argh(option, short = 'm', default = "\"./hyw.postcard\".to_string()")]
+    map_path: String,
+}
+
 #[compio::main]
 async fn main() {
     // Parse arguments (TODO: Use proper argument parser)
-    let mut args = std::env::args().skip(1);
-    let api_key = args
-        .next()
-        .expect("Please provide SILICON_FLOW_API_KEY as the first argument");
-    let map_path = args.next().unwrap_or_else(|| "./hyw.postcard".to_string());
+    let args: Args = argh::from_env();
+    let Args { api_key, map_path } = args;
 
     // Initialize API client
     let client = ApiClient::new(&api_key).expect("Failed to create API client");

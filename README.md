@@ -34,7 +34,17 @@ You can download pre-computed data from [this Release](https://github.com/PRO-26
 
 ## 📖 Usage
 
-TODO
+```shell
+$ hyw -h
+Usage: hyw -k <api-key> [-m <map-path>]
+
+Querying embeddings for hyw.
+
+Options:
+  -k, --api-key     key for SiliconFlow API
+  -m, --map-path    path to the embedding map file
+  -h, --help        display usage information
+```
 
 ## 🎉 Credits
 
