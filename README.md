@@ -1,4 +1,4 @@
-# hyw
+# hyw - 合义维
 
 [![GitHub License](https://img.shields.io/github/license/PRO-2684/hyw?logo=opensourceinitiative)](https://github.com/PRO-2684/hyw/blob/main/LICENSE)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/PRO-2684/hyw/release.yml?logo=githubactions)](https://github.com/PRO-2684/hyw/blob/main/.github/workflows/release.yml)
@@ -8,32 +8,7 @@
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/hyw?logo=rust)](https://crates.io/crates/hyw)
 [![docs.rs](https://img.shields.io/docsrs/hyw?logo=rust)](https://docs.rs/hyw)
 
-hyw?
-
-## ⚙️ Automatic Releases Setup
-
-1. [Create a new GitHub repository](https://github.com/new) with the name `hyw` and push this generated project to it.
-2. Enable Actions for the repository, and grant "Read and write permissions" to the workflow [here](https://github.com/PRO-2684/hyw/settings/actions).
-3. [Generate an API token on crates.io](https://crates.io/settings/tokens/new), with the following setup:
-
-    - `Name`: `hyw`
-    - `Expiration`: `No expiration`
-    - `Scopes`: `publish-new`, `publish-update`
-    - `Crates`: `hyw`
-
-4. [Add a repository secret](https://github.com/PRO-2684/hyw/settings/secrets/actions/new) named `CARGO_TOKEN` with the generated token as its value.
-5. Consider removing this section and updating this README with your own project information.
-
-[Trusted Publishing](https://crates.io/docs/trusted-publishing) is a recent feature added to crates.io. To utilize it, first make sure you've already successfully published the crate to crates.io. Then, follow these steps:
-
-1. [Add a new trusted publisher](https://crates.io/crates/hyw/settings/new-trusted-publisher) to your crate.
-    - Set "Workflow filename" to `release.yml`.
-    - Keep other fields intact.
-    - Click "Add".
-2. Modify [`release.yml`](.github/workflows/release.yml).
-    1. Comment out or remove the `publish-release` job.
-    2. Un-comment the `trusted-publishing` job.
-3. Remove the `CARGO_TOKEN` [repository secret](https://github.com/PRO-2684/hyw/settings/secrets/actions).
+> 穷举排列组 **合**，寻找最接近的语 **义** 于上千 **维** 度中。
 
 ## 📥 Installation
 
@@ -53,15 +28,13 @@ Navigate to the [Releases page](https://github.com/PRO-2684/hyw/releases) and do
 cargo install hyw
 ```
 
+## 📊 Embedding Data
+
+You can download pre-computed data from [this Release](https://github.com/PRO-2684/hyw/releases/tag/_data-251226), or generate one via the [`hyw-embed`](./hyw-embed) crate.
+
 ## 📖 Usage
 
 TODO
-
-## ✅ TODO
-
-- [x] Saving on ctrl-c
-- [x] Saving on error
-- [x] Move searching to hyw crate
 
 ## 🎉 Credits
 
