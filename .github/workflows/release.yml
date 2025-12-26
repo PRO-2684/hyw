@@ -112,7 +112,7 @@ jobs:
       with:
         toolchain: stable
     - name: Publish to crates.io
-      run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
+      run: cargo publish --token ${{ secrets.CARGO_TOKEN }} --workspace
   # trusted-publishing:
   #   # https://crates.io/docs/trusted-publishing
   #   name: trusted-publishing
