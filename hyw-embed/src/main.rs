@@ -5,7 +5,7 @@ use compio::{runtime::time::interval, signal::ctrl_c};
 use futures_util::{FutureExt, select};
 use hyw_base::Hyw;
 use hyw_embed::{ApiClient, EmbedError, Embedding};
-use instant_distance::{Builder, Search};
+use instant_distance::{Builder, HnswMap, Search};
 use itermore::IterArrayChunks;
 use postcard::{from_io, to_io, Error as PostcardError};
 use std::{fs::File, io::{Error as IoError, Write}, path::Path, pin::pin, time::Duration};
@@ -88,18 +88,21 @@ async fn main() -> Result<(), MainError> {
 
     eprintln!("Embedding map is ready! Starting search...");
 
-    let query = "示例查询文本";
-    let query_embedding = &client.embed_text(&[query]).await?[0];
-    let mut search_state = Search::default(); // only used by the library internally
-    let results = map.search(&query_embedding, &mut search_state);
-
-    eprintln!("Top 5 results for query: \"{query}\"");
-    for (rank, result) in results.take(5).enumerate() {
-        let id = result.value;
-        let distance = result.distance;
-        let hyw = Hyw::from_index(*id).unwrap();
-        println!("#{}: {hyw} (Distance: {distance:.4})", rank + 1);
+    let mut query = "1".to_string(); // Prevent empty on first loop
+    let stdin = std::io::stdin();
+    while !query.trim().is_empty() {
+        query.clear();
+        eprint!("\nEnter search query (or press Enter to exit): ");
+        std::io::stdout().flush().unwrap();
+        stdin.read_line(&mut query).unwrap();
+        let query = query.trim();
+        if query.is_empty() {
+            break;
+        }
+        search(&map, &client, query).await?;
     }
+
+    println!("Exiting. Goodbye!");
 
     Ok(())
 }
@@ -185,6 +188,23 @@ async fn embed_all(client: &ApiClient, data: &mut Vec<Embedding>) -> Result<(), 
         "\nCompleted! All {size} embeddings generated and saved."
     )
     .unwrap();
+
+    Ok(())
+}
+
+/// Searches for the given query.
+async fn search(map: &HnswMap<Embedding, usize>, client: &ApiClient, query: &str) -> Result<(), EmbedError> {
+    let query_embedding = &client.embed_text(&[query]).await?[0];
+    let mut search_state = Search::default(); // only used by the library internally
+    let results = map.search(&query_embedding, &mut search_state);
+
+    println!("Top 5 results for query: \"{query}\"");
+    for (rank, result) in results.take(5).enumerate() {
+        let id = result.value;
+        let distance = result.distance;
+        let hyw = Hyw::from_index(*id).unwrap();
+        println!("#{}: {hyw} (Distance: {distance:.4})", rank + 1);
+    }
 
     Ok(())
 }
