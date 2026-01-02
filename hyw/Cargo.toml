@@ -1,8 +1,8 @@
 [package]
 name = "hyw"
-version = "0.1.0"
 readme = "../README.md"
 description = "Querying embeddings for hyw"
+version.workspace = true
 keywords.workspace = true
 categories.workspace = true
 edition.workspace = true
@@ -14,8 +14,8 @@ authors.workspace = true
 [dependencies]
 argh = { version = "0.1.13", default-features = false, features = ["help"] }
 compio.workspace = true
-hyw-base = { path = "../hyw-base", version = "0.1.0" }
-hyw-embed = { path = "../hyw-embed", version = "0.1.0" }
+hyw-base = { path = "../hyw-base", version = "0.1" }
+hyw-embed = { path = "../hyw-embed", version = "0.1" }
 instant-distance.workspace = true
 postcard = { workspace = true, optional = true }
 

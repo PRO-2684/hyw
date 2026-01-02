@@ -24,7 +24,7 @@ A valid `hyw` combination consists of three characters, with the pinyin for each
 - Query given `hyw` combinations' indices in the `hyw` sequence and vice versa (`query`)
 - Search the closest `hyw` sequence to input in terms of semantics (`search`)
 
-It was heavily inspired by Liu Cixin's science fiction novel "Poetry Cloud".[^1]
+This project is heavily inspired by Liu Cixin's science fiction novel "Poetry Cloud"[^1] and BV1c3PuewEmu[^2].
 
 ## 📥 Installation
 

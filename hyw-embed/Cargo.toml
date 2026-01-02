@@ -1,8 +1,8 @@
 [package]
 name = "hyw-embed"
-version = "0.1.0"
 readme = "README.md"
 description = "Creating embeddings for hyw"
+version.workspace = true
 keywords.workspace = true
 categories.workspace = true
 edition.workspace = true
@@ -16,7 +16,7 @@ base64 = "0.22.1"
 cyper.workspace = true
 compio.workspace = true
 futures-util = { workspace = true, optional = true }
-hyw-base = { path = "../hyw-base", version = "0.1.0" }
+hyw-base = { path = "../hyw-base", version = "0.1" }
 instant-distance.workspace = true
 itermore = { version = "0.8.0", features = ["array_chunks"] }
 postcard = { workspace = true, optional = true }
