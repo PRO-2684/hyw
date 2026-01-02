@@ -1,6 +1,6 @@
 //! Data and basic structures for hyw.
 
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 // Constructed by using https://github.com/PRO-2684/pinchar and further filtering from https://hanzicraft.com/lists/frequency and prior knowledge.
 
@@ -154,6 +154,27 @@ impl Default for Hyw {
     }
 }
 
+impl FromStr for Hyw {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut chars = s.chars();
+        let he_char = chars.next().ok_or(())?;
+        let yi_char = chars.next().ok_or(())?;
+        let wei_char = chars.next().ok_or(())?;
+
+        let he_index = HE.iter().position(|&c| c == he_char).ok_or(())?;
+        let yi_index = YI.iter().position(|&c| c == yi_char).ok_or(())?;
+        let wei_index = WEI.iter().position(|&c| c == wei_char).ok_or(())?;
+
+        Ok(Hyw {
+            he: he_index,
+            yi: yi_index,
+            wei: wei_index,
+        })
+    }
+}
+
 /// Iterator over all possible [`Hyw`] combinations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HywIterator {
@@ -251,6 +272,19 @@ mod tests {
         hyw.set_yi(1);
         let prev = hyw.previous().unwrap();
         assert_eq!(prev.to_index(), hyw.to_index() - 1);
+    }
+
+    #[test]
+    fn test_hyw_from_str() {
+        let hyw_str = format!("{}{}{}", HE[2], YI[3], WEI[4]);
+        let hyw = Hyw::from_str(&hyw_str).unwrap();
+        assert_eq!(hyw.he, 2);
+        assert_eq!(hyw.yi, 3);
+        assert_eq!(hyw.wei, 4);
+
+        // Test invalid strings
+        assert!(Hyw::from_str("abc").is_err());
+        assert!(Hyw::from_str("不存在的字符").is_err());
     }
 
     #[test]

@@ -10,6 +10,22 @@
 
 > 穷举排列组 **合**，寻找最接近的语 **义** 于上千 **维** 度中。
 
+## ℹ️ Introduction
+
+### `hyw` Combination & `hyw` Sequence
+
+A valid `hyw` combination consists of three characters, with the pinyin for each character being `he`, `yi` and `wei`. To systematically cover all possibilities, we can generate all possible `hyw` combinations through permutations. The `hyw` sequence is defined as the ordered list of all `hyw` combinations. For detailed implementation and character set, you can refer to [`hyw-base` crate](./hyw-base/src/lib.rs).
+
+### `hyw` (合义维)
+
+`hyw` (合义维) is a CLI tool designed to explore the `hyw` sequence. It can:
+
+- List the entire `hyw` sequence (`list`)
+- Query given `hyw` combinations' indices in the `hyw` sequence and vice versa (`query`)
+- Search the closest `hyw` sequence to input in terms of semantics (`search`)
+
+It was heavily inspired by Liu Cixin's science fiction novel "Poetry Cloud".[^1]
+
 ## 📥 Installation
 
 ### Using [`binstall`](https://github.com/cargo-bins/cargo-binstall)
@@ -35,16 +51,22 @@ You can download pre-computed data from [this Release](https://github.com/PRO-26
 ## 📖 Usage
 
 ```shell
-$ hyw -h
-Usage: hyw -k <api-key> [-m <map-path>]
+Usage: hyw [<action>] [-k <api-key>] [-m <map-path>]
 
-Querying embeddings for hyw.
+合义维
+
+Positional Arguments:
+  action            the action to take, can be 'list'/'l', 'query'/'q' or
+                    'search'/'s' (default)
 
 Options:
-  -k, --api-key     key for SiliconFlow API
-  -m, --map-path    path to the embedding map file
+  -k, --api-key     key for SiliconFlow API, required for search, using
+                    environment variable SILICONFLOW_API_KEY if not provided
+  -m, --map-path    path to the embedding map file, default is "./hyw.postcard"
   -h, --help        display usage information
 ```
+
+Note that the api key is only required for "search" action. If you don't have one, simply create an account and get one from their [API keys page](https://cloud.siliconflow.cn/me/account/ak). Their [embedding API](https://docs.siliconflow.cn/en/api-reference/embeddings/create-embeddings) is free to use.
 
 ## 💡 Examples
 
@@ -85,6 +107,7 @@ Enter search query (or press Enter to exit):
 Exiting. Goodbye!
 ```
 
-## 🎉 Credits
+## 🔗 References
 
-TODO
+[^1]: 刘慈欣. 诗云[J]. 科幻世界, 2003(3).
+[^2]: 害怕的狗XGGGGGGGG258. 这是我个人的一小步，却是CCB的一大步[EB/OL]. Bilibili, (2025-02-22)[2026-01-01]. https://www.bilibili.com/video/BV1c3PuewEmu
